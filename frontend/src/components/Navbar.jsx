@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  const { user, logout, isSuperAdmin, isAdmin } = useAuth();
+  const { user, logout, isSuperAdmin, isAdmin, hasModulo } = useAuth();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -12,9 +12,10 @@ export default function Navbar() {
 
   return (
     <nav style={{ display: 'flex', gap: '1rem', padding: '1rem', background: '#1e293b', color: 'white' }}>
-      <Link to="/inventario" style={{ color: 'white' }}>Inventario</Link>
-      {isAdmin && <Link to="/categorias" style={{ color: 'white' }}>Categorías</Link>}
-      <Link to="/caja" style={{ color: 'white' }}>Caja</Link>
+      <Link to="/" style={{ color: 'white', fontWeight: '600' }}>Inicio</Link>
+      {hasModulo('inventario') && <Link to="/inventario" style={{ color: 'white' }}>Inventario</Link>}
+      {hasModulo('inventario') && isAdmin && <Link to="/categorias" style={{ color: 'white' }}>Categorías</Link>}
+      {hasModulo('caja') && <Link to="/caja" style={{ color: 'white' }}>Caja</Link>}
       {isSuperAdmin && <Link to="/admin/empresas" style={{ color: 'white' }}>Admin Empresas</Link>}
       <span style={{ marginLeft: 'auto' }}>{user?.nombre} ({user?.rol})</span>
       <button onClick={handleLogout} style={{ color: 'white', background: 'none', border: '1px solid white', cursor: 'pointer', padding: '0.25rem 0.75rem' }}>

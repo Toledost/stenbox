@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import { Pencil, Trash2, Save, X, Plus } from 'lucide-react';
 
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
@@ -98,15 +99,17 @@ function ModalEditar({ form, setForm, categorias, onSubmit, onClose, error }) {
             <button
               type="button"
               onClick={onClose}
-              style={{ padding: '0.5rem 1rem', background: 'white', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
+              title="Descartar cambios y cerrar"
+              style={{ padding: '0.5rem 1rem', background: 'white', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
             >
-              Cancelar
+              <X size={15} /> Cancelar
             </button>
             <button
               type="submit"
-              style={{ padding: '0.5rem 1.25rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              title="Guardar cambios del producto"
+              style={{ padding: '0.5rem 1.25rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
             >
-              Guardar
+              <Save size={15} /> Guardar
             </button>
           </div>
         </form>
@@ -241,8 +244,8 @@ export default function InventarioPage() {
                 <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Stock (kg)</label>
                 <input placeholder="0.000" type="number" step="0.001" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '90px' }} />
               </div>
-              <button type="submit" style={{ padding: '0.45rem 1rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                Agregar
+              <button type="submit" title="Agregar producto al inventario" style={{ padding: '0.45rem 1rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Plus size={15} /> Agregar
               </button>
               {!editId && error && <span style={{ color: '#ef4444', alignSelf: 'center' }}>{error}</span>}
             </form>
@@ -300,8 +303,8 @@ export default function InventarioPage() {
                       {isAdmin && (
                         <td style={{ ...tdStyle, textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                            <button onClick={() => iniciarEdicion(p)} style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem' }}>Editar</button>
-                            <button onClick={() => eliminar(p.id)} style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.8rem' }}>Eliminar</button>
+                            <button onClick={() => iniciarEdicion(p)} title="Editar precio, stock y categoría del producto" style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Pencil size={13} /> Editar</button>
+                            <button onClick={() => eliminar(p.id)} title="Eliminar producto del inventario" style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Trash2 size={13} /> Eliminar</button>
                           </div>
                         </td>
                       )}

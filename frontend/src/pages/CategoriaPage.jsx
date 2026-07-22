@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import { Pencil, Trash2, Save, X, Plus } from 'lucide-react';
 
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
@@ -84,9 +85,10 @@ export default function CategoriaPage() {
             />
             <button
               type="submit"
-              style={{ padding: '0.45rem 1.25rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              title="Agregar nueva categoría"
+              style={{ padding: '0.45rem 1.25rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
             >
-              Agregar
+              <Plus size={15} /> Agregar
             </button>
           </form>
           {error && <p style={{ color: '#ef4444', margin: '0.5rem 0 0', fontSize: '0.85rem' }}>{error}</p>}
@@ -113,8 +115,8 @@ export default function CategoriaPage() {
                         onChange={e => setEditNombre(e.target.value)}
                         style={{ flex: 1, padding: '0.3rem 0.5rem', border: '1px solid #94a3b8', borderRadius: '4px' }}
                       />
-                      <button type="submit" style={{ padding: '0.3rem 0.6rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>Guardar</button>
-                      <button type="button" onClick={() => setEditId(null)} style={{ padding: '0.3rem 0.6rem', background: 'white', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>×</button>
+                      <button type="submit" title="Guardar nombre de categoría" style={{ padding: '0.3rem 0.6rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Save size={13} /> Guardar</button>
+                      <button type="button" onClick={() => setEditId(null)} title="Cancelar edición" style={{ padding: '0.3rem 0.6rem', background: 'white', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center' }}><X size={13} /></button>
                       {errorEdit && <span style={{ color: '#ef4444', alignSelf: 'center', fontSize: '0.8rem' }}>{errorEdit}</span>}
                     </form>
                   ) : (
@@ -124,8 +126,8 @@ export default function CategoriaPage() {
                 <td style={{ ...tdStyle, textAlign: 'center' }}>
                   {editId !== cat.id && (
                     <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                      <button onClick={() => iniciarEdicion(cat)} style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem' }}>Editar</button>
-                      <button onClick={() => handleEliminar(cat)} style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.8rem' }}>Eliminar</button>
+                      <button onClick={() => iniciarEdicion(cat)} title="Editar nombre de categoría" style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Pencil size={13} /> Editar</button>
+                      <button onClick={() => handleEliminar(cat)} title="Eliminar categoría" style={{ padding: '0.25rem 0.6rem', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Trash2 size={13} /> Eliminar</button>
                     </div>
                   )}
                 </td>

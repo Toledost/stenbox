@@ -2,35 +2,42 @@ import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import { Trash2, CheckCircle } from 'lucide-react';
 
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
 
-const emptyForm = { tipo: 'venta', id_producto: '', cantidad: '', precio_unit: '', monto: '', descripcion: '' };
+const makeEmptyForm = (tieneInventario) => ({
+  tipo: tieneInventario ? 'venta' : 'ingreso',
+  id_producto: '', cantidad: '', precio_unit: '', monto: '', descripcion: '',
+});
 
 const TIPO_COLOR = { venta: '#22c55e', compra: '#ef4444', ingreso: '#3b82f6', egreso: '#f59e0b' };
 const TIPO_ES_ENTRADA = t => t === 'venta' || t === 'ingreso';
 
 export default function CajaPage() {
-  const { user } = useAuth();
+  const { user, isAdmin, hasModulo } = useAuth();
   const [movimientos, setMovimientos] = useState([]);
   const [resumen, setResumen] = useState({ total_ingresos: 0, total_egresos: 0, saldo: 0 });
   const [productos, setProductos] = useState([]);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() => makeEmptyForm(hasModulo('inventario')));
   const [error, setError] = useState('');
 
+  const tieneInventario = hasModulo('inventario');
   const empresaId = user?.id_empresa || 1;
   const empresaParam = user?.id_empresa ? '' : `?empresa=${empresaId}`;
 
   async function cargar() {
-    const [mov, res, prods] = await Promise.all([
+    const requests = [
       api.get(`/caja${empresaParam}`),
       api.get(`/caja/resumen${empresaParam}`),
-      api.get(`/productos${empresaParam}`),
-    ]);
+    ];
+    if (tieneInventario) requests.push(api.get(`/productos${empresaParam}`));
+
+    const [mov, res, prods] = await Promise.all(requests);
     setMovimientos(mov.data);
     setResumen(res.data);
-    setProductos(prods.data);
+    if (prods) setProductos(prods.data);
   }
 
   useEffect(() => { cargar(); }, []);
@@ -54,6 +61,16 @@ export default function CajaPage() {
     ? (Number(form.cantidad) * Number(form.precio_unit)).toFixed(2)
     : null;
 
+  async function eliminarMovimiento(id) {
+    if (!confirm('¿Eliminar este movimiento? Se revertirá el stock si aplica.')) return;
+    try {
+      await api.delete(`/caja/${id}${empresaParam}`);
+      cargar();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error al eliminar');
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -62,7 +79,7 @@ export default function CajaPage() {
         ? { tipo: form.tipo, id_producto: form.id_producto, cantidad: form.cantidad, precio_unit: form.precio_unit, descripcion: form.descripcion }
         : { tipo: form.tipo, monto: form.monto, descripcion: form.descripcion };
       await api.post(`/caja${empresaParam}`, payload);
-      setForm(emptyForm);
+      setForm(makeEmptyForm(tieneInventario));
       cargar();
     } catch (err) {
       setError(err.response?.data?.message || 'Error');
@@ -98,11 +115,11 @@ export default function CajaPage() {
               <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Tipo *</label>
               <select
                 value={form.tipo}
-                onChange={e => setForm({ ...emptyForm, tipo: e.target.value })}
+                onChange={e => setForm({ ...makeEmptyForm(tieneInventario), tipo: e.target.value })}
                 style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
               >
-                <option value="venta">Venta (ingreso + descuenta stock)</option>
-                <option value="compra">Compra (egreso + suma stock)</option>
+                {tieneInventario && <option value="venta">Venta (ingreso + descuenta stock)</option>}
+                {tieneInventario && <option value="compra">Compra (egreso + suma stock)</option>}
                 <option value="ingreso">Ingreso genérico</option>
                 <option value="egreso">Egreso genérico</option>
               </select>
@@ -122,7 +139,7 @@ export default function CajaPage() {
                     <option value="">— Seleccionar —</option>
                     {productos.map(p => (
                       <option key={p.id} value={p.id}>
-                        {p.codigo ? `[${p.codigo}] ` : ''}{p.nombre} — Stock: {Number(p.stock).toFixed(3)} kg
+                        {p.codigo ? `[${p.codigo}] ` : ''}{p.nombre} — Stock: {Number(p.stock).toFixed(2)} kg
                       </option>
                     ))}
                   </select>
@@ -133,7 +150,7 @@ export default function CajaPage() {
                     Cantidad (kg) *
                     {prodSeleccionado && form.tipo === 'venta' && (
                       <span style={{ color: Number(prodSeleccionado.stock) < Number(form.cantidad || 0) ? '#ef4444' : '#22c55e', marginLeft: '0.4rem' }}>
-                        Stock: {Number(prodSeleccionado.stock).toFixed(3)} kg
+                        Stock: {Number(prodSeleccionado.stock).toFixed(2)} kg
                       </span>
                     )}
                   </label>
@@ -205,9 +222,10 @@ export default function CajaPage() {
 
             <button
               type="submit"
-              style={{ padding: '0.45rem 1.25rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              title="Registrar el movimiento en caja"
+              style={{ padding: '0.45rem 1.25rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              Registrar
+              <CheckCircle size={16} /> Registrar
             </button>
             {error && <span style={{ color: '#ef4444', alignSelf: 'center' }}>{error}</span>}
           </form>
@@ -225,6 +243,7 @@ export default function CajaPage() {
               <th style={{ ...thStyle, textAlign: 'right' }}>Monto</th>
               <th style={thStyle}>Descripción</th>
               <th style={thStyle}>Usuario</th>
+              {isAdmin && <th style={{ ...thStyle, textAlign: 'center', width: '80px' }}></th>}
             </tr>
           </thead>
           <tbody>
@@ -233,17 +252,28 @@ export default function CajaPage() {
                 <td style={tdStyle}>{new Date(m.fecha).toLocaleString('es-AR')}</td>
                 <td style={{ ...tdStyle, color: TIPO_COLOR[m.tipo] || '#64748b', fontWeight: '600', textTransform: 'capitalize' }}>{m.tipo}</td>
                 <td style={tdStyle}>{m.producto_nombre ? `${m.producto_codigo ? `[${m.producto_codigo}] ` : ''}${m.producto_nombre}` : '-'}</td>
-                <td style={{ ...tdStyle, textAlign: 'right' }}>{m.cantidad != null ? Number(m.cantidad).toFixed(3) : '-'}</td>
+                <td style={{ ...tdStyle, textAlign: 'right' }}>{m.cantidad != null ? Number(m.cantidad).toFixed(2) : '-'}</td>
                 <td style={{ ...tdStyle, textAlign: 'right' }}>{m.precio_unit != null ? `$${Number(m.precio_unit).toLocaleString('es-AR')}` : '-'}</td>
                 <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600', color: TIPO_ES_ENTRADA(m.tipo) ? '#22c55e' : '#ef4444' }}>
                   {TIPO_ES_ENTRADA(m.tipo) ? '+' : '-'}${Number(m.monto).toLocaleString('es-AR')}
                 </td>
                 <td style={tdStyle}>{m.descripcion || '-'}</td>
                 <td style={tdStyle}>{m.usuario_nombre}</td>
+                {isAdmin && (
+                  <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <button
+                      onClick={() => eliminarMovimiento(m.id)}
+                      title="Eliminar movimiento (revierte el stock si aplica)"
+                      style={{ padding: '0.2rem 0.5rem', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
             {movimientos.length === 0 && (
-              <tr><td colSpan={8} style={{ ...tdStyle, textAlign: 'center', color: '#94a3b8' }}>Sin movimientos registrados</td></tr>
+              <tr><td colSpan={isAdmin ? 9 : 8} style={{ ...tdStyle, textAlign: 'center', color: '#94a3b8' }}>Sin movimientos registrados</td></tr>
             )}
           </tbody>
         </table>

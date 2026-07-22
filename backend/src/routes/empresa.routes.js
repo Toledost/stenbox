@@ -9,6 +9,9 @@ router.get('/', c.listarEmpresas);
 router.post('/', c.crearEmpresa);
 router.put('/:id', c.actualizarEmpresa);
 router.delete('/:id', c.eliminarEmpresa);
+router.get('/:id_empresa/usuarios', c.listarUsuariosDeEmpresa);
 router.post('/:id_empresa/usuarios', c.crearUsuarioEnEmpresa);
+router.put('/usuarios/:id_usuario', c.actualizarUsuario);
+router.delete('/usuarios/:id_usuario', c.eliminarUsuario);
 
 module.exports = router;

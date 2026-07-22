@@ -22,9 +22,10 @@ export function AuthProvider({ children }) {
 
   const isSuperAdmin = user?.rol === 'superadmin';
   const isAdmin = user?.rol === 'admin' || isSuperAdmin;
+  const hasModulo = (nombre) => isSuperAdmin || (user?.modulos || []).includes(nombre);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isSuperAdmin, isAdmin }}>
+    <AuthContext.Provider value={{ user, login, logout, isSuperAdmin, isAdmin, hasModulo }}>
       {children}
     </AuthContext.Provider>
   );

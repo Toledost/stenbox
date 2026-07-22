@@ -23,4 +23,16 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { verifyToken, requireRole };
+function requireModulo(nombre) {
+  return (req, res, next) => {
+    // superadmin (id_rol=1) siempre tiene acceso
+    if (req.user.id_rol === 1) return next();
+    const modulos = req.user.modulos || [];
+    if (!modulos.includes(nombre)) {
+      return res.status(403).json({ message: `Sin acceso al módulo: ${nombre}` });
+    }
+    next();
+  };
+}
+
+module.exports = { verifyToken, requireRole, requireModulo };

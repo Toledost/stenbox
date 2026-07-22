@@ -99,4 +99,42 @@ async function resumenCaja(req, res) {
   res.json(rows[0]);
 }
 
-module.exports = { listarMovimientos, crearMovimiento, resumenCaja };
+async function eliminarMovimiento(req, res) {
+  const id_empresa = resolverEmpresa(req);
+  if (!id_empresa) return res.status(400).json({ message: 'Indica ?empresa=ID' });
+  const { id } = req.params;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [rows] = await conn.query(
+      'SELECT * FROM caja_movimiento WHERE id=? AND id_empresa=?',
+      [id, id_empresa]
+    );
+    if (!rows.length) {
+      await conn.rollback();
+      return res.status(404).json({ message: 'Movimiento no encontrado' });
+    }
+
+    const mov = rows[0];
+
+    // Revertir el stock si el movimiento tenía producto
+    if (mov.id_producto && mov.cantidad != null) {
+      const delta = mov.tipo === 'venta' ? Number(mov.cantidad) : -Number(mov.cantidad);
+      await conn.query('UPDATE producto SET stock = stock + ? WHERE id=?', [delta, mov.id_producto]);
+    }
+
+    await conn.query('DELETE FROM caja_movimiento WHERE id=?', [id]);
+    await conn.commit();
+    res.json({ message: 'Movimiento eliminado' });
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
+    res.status(500).json({ message: 'Error al eliminar movimiento' });
+  } finally {
+    conn.release();
+  }
+}
+
+module.exports = { listarMovimientos, crearMovimiento, resumenCaja, eliminarMovimiento };
