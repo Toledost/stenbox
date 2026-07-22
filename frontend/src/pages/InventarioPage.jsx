@@ -3,6 +3,8 @@ import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { Pencil, Trash2, Save, X, Plus } from 'lucide-react';
+import { useEmpresaSelector } from '../hooks/useEmpresaSelector';
+import EmpresaSelector from '../components/EmpresaSelector';
 
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
@@ -119,18 +121,17 @@ function ModalEditar({ form, setForm, categorias, onSubmit, onClose, error }) {
 }
 
 export default function InventarioPage() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin } = useAuth();
+  const { empresaParam, empresaId, empresas, setEmpresaId, isSuperAdmin } = useEmpresaSelector();
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('');
-  const [empresaId] = useState(user?.id_empresa || 1);
-
-  const empresaParam = user?.id_empresa ? '' : `?empresa=${empresaId}`;
 
   async function cargar() {
+    if (!empresaId) return;
     const [{ data: prods }, { data: cats }] = await Promise.all([
       api.get(`/productos${empresaParam}`),
       api.get(`/categorias${empresaParam}`),
@@ -139,7 +140,7 @@ export default function InventarioPage() {
     setCategorias(cats);
   }
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); }, [empresaId]);
 
   async function handleSubmitNuevo(e) {
     e.preventDefault();
@@ -212,6 +213,7 @@ export default function InventarioPage() {
 
       <div style={{ padding: '1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
         <h2 style={{ marginBottom: '1rem' }}>Inventario</h2>
+        {isSuperAdmin && <EmpresaSelector empresas={empresas} empresaId={empresaId} onChange={setEmpresaId} />}
 
         {isAdmin && (
           <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>

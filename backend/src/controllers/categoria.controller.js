@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 
 function resolverEmpresa(req) {
+  if (req.user.id_rol === 1 && req.query.empresa) return req.query.empresa;
   if (req.user.id_empresa) return req.user.id_empresa;
   return req.query.empresa || null;
 }

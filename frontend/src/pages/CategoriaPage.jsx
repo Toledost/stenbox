@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
-import { useAuth } from '../context/AuthContext';
 import { Pencil, Trash2, Save, X, Plus } from 'lucide-react';
+import { useEmpresaSelector } from '../hooks/useEmpresaSelector';
+import EmpresaSelector from '../components/EmpresaSelector';
 
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
 
 export default function CategoriaPage() {
-  const { user } = useAuth();
+  const { empresaParam, empresaId, empresas, setEmpresaId, isSuperAdmin } = useEmpresaSelector();
   const [categorias, setCategorias] = useState([]);
   const [nombre, setNombre] = useState('');
   const [editId, setEditId] = useState(null);
@@ -16,14 +17,13 @@ export default function CategoriaPage() {
   const [error, setError] = useState('');
   const [errorEdit, setErrorEdit] = useState('');
 
-  const empresaParam = user?.id_empresa ? '' : `?empresa=${user?.id_empresa || 1}`;
-
   async function cargar() {
+    if (!empresaId) return;
     const { data } = await api.get(`/categorias${empresaParam}`);
     setCategorias(data);
   }
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); }, [empresaId]);
 
   async function handleAgregar(e) {
     e.preventDefault();
@@ -71,6 +71,7 @@ export default function CategoriaPage() {
       <Navbar />
       <div style={{ padding: '1.5rem', maxWidth: '600px', margin: '0 auto' }}>
         <h2 style={{ marginBottom: '1rem' }}>Categorías de producto</h2>
+        {isSuperAdmin && <EmpresaSelector empresas={empresas} empresaId={empresaId} onChange={setEmpresaId} />}
 
         {/* Formulario agregar */}
         <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>

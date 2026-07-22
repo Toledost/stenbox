@@ -3,6 +3,8 @@ import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { Trash2, CheckCircle } from 'lucide-react';
+import { useEmpresaSelector } from '../hooks/useEmpresaSelector';
+import EmpresaSelector from '../components/EmpresaSelector';
 
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
@@ -16,7 +18,8 @@ const TIPO_COLOR = { venta: '#22c55e', compra: '#ef4444', ingreso: '#3b82f6', eg
 const TIPO_ES_ENTRADA = t => t === 'venta' || t === 'ingreso';
 
 export default function CajaPage() {
-  const { user, isAdmin, hasModulo } = useAuth();
+  const { isAdmin, hasModulo } = useAuth();
+  const { empresaParam, empresaId, empresas, setEmpresaId, isSuperAdmin } = useEmpresaSelector();
   const [movimientos, setMovimientos] = useState([]);
   const [resumen, setResumen] = useState({ total_ingresos: 0, total_egresos: 0, saldo: 0 });
   const [productos, setProductos] = useState([]);
@@ -24,10 +27,9 @@ export default function CajaPage() {
   const [error, setError] = useState('');
 
   const tieneInventario = hasModulo('inventario');
-  const empresaId = user?.id_empresa || 1;
-  const empresaParam = user?.id_empresa ? '' : `?empresa=${empresaId}`;
 
   async function cargar() {
+    if (!empresaId) return;
     const requests = [
       api.get(`/caja${empresaParam}`),
       api.get(`/caja/resumen${empresaParam}`),
@@ -40,7 +42,7 @@ export default function CajaPage() {
     if (prods) setProductos(prods.data);
   }
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); }, [empresaId]);
 
   // Cuando cambia el producto, precarga el precio del inventario
   function handleProductoChange(e) {
@@ -94,6 +96,7 @@ export default function CajaPage() {
       <Navbar />
       <div style={{ padding: '1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
         <h2 style={{ marginBottom: '1rem' }}>Caja / Libro Diario</h2>
+        {isSuperAdmin && <EmpresaSelector empresas={empresas} empresaId={empresaId} onChange={setEmpresaId} />}
 
         {/* Resumen */}
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
