@@ -1,72 +1,250 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
+
+const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
+const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
+
+const emptyForm = { tipo: 'venta', id_producto: '', cantidad: '', precio_unit: '', monto: '', descripcion: '' };
+
+const TIPO_COLOR = { venta: '#22c55e', compra: '#ef4444', ingreso: '#3b82f6', egreso: '#f59e0b' };
+const TIPO_ES_ENTRADA = t => t === 'venta' || t === 'ingreso';
 
 export default function CajaPage() {
+  const { user } = useAuth();
   const [movimientos, setMovimientos] = useState([]);
   const [resumen, setResumen] = useState({ total_ingresos: 0, total_egresos: 0, saldo: 0 });
-  const [form, setForm] = useState({ tipo: 'ingreso', monto: '', descripcion: '' });
+  const [productos, setProductos] = useState([]);
+  const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
 
+  const empresaId = user?.id_empresa || 1;
+  const empresaParam = user?.id_empresa ? '' : `?empresa=${empresaId}`;
+
   async function cargar() {
-    const [mov, res] = await Promise.all([api.get('/caja'), api.get('/caja/resumen')]);
+    const [mov, res, prods] = await Promise.all([
+      api.get(`/caja${empresaParam}`),
+      api.get(`/caja/resumen${empresaParam}`),
+      api.get(`/productos${empresaParam}`),
+    ]);
     setMovimientos(mov.data);
     setResumen(res.data);
+    setProductos(prods.data);
   }
 
   useEffect(() => { cargar(); }, []);
+
+  // Cuando cambia el producto, precarga el precio del inventario
+  function handleProductoChange(e) {
+    const id = e.target.value;
+    const prod = productos.find(p => String(p.id) === String(id));
+    setForm(f => ({
+      ...f,
+      id_producto: id,
+      precio_unit: prod ? prod.precio : '',
+    }));
+  }
+
+  // Determina si el tipo actual usa producto (venta/compra) o es genérico (ingreso/egreso)
+  const usaProducto = form.tipo === 'venta' || form.tipo === 'compra';
+
+  // Monto calculado automáticamente cuando hay producto
+  const montoCalculado = usaProducto && form.cantidad && form.precio_unit
+    ? (Number(form.cantidad) * Number(form.precio_unit)).toFixed(2)
+    : null;
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     try {
-      await api.post('/caja', form);
-      setForm({ tipo: 'ingreso', monto: '', descripcion: '' });
+      const payload = usaProducto
+        ? { tipo: form.tipo, id_producto: form.id_producto, cantidad: form.cantidad, precio_unit: form.precio_unit, descripcion: form.descripcion }
+        : { tipo: form.tipo, monto: form.monto, descripcion: form.descripcion };
+      await api.post(`/caja${empresaParam}`, payload);
+      setForm(emptyForm);
       cargar();
     } catch (err) {
       setError(err.response?.data?.message || 'Error');
     }
   }
 
+  // Producto seleccionado actualmente para mostrar su stock
+  const prodSeleccionado = productos.find(p => String(p.id) === String(form.id_producto));
+
   return (
     <>
       <Navbar />
-      <div style={{ padding: '1.5rem' }}>
-        <h2>Caja / Libro Diario</h2>
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-          {[['Ingresos', resumen.total_ingresos, '#22c55e'], ['Egresos', resumen.total_egresos, '#ef4444'], ['Saldo', resumen.saldo, '#1e293b']].map(([label, val, color]) => (
-            <div key={label} style={{ padding: '1rem', background: 'white', borderRadius: '8px', border: `2px solid ${color}`, minWidth: '150px' }}>
-              <div style={{ color: '#64748b', fontSize: '0.875rem' }}>{label}</div>
-              <div style={{ color, fontWeight: 'bold', fontSize: '1.25rem' }}>${Number(val || 0).toFixed(2)}</div>
+      <div style={{ padding: '1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Caja / Libro Diario</h2>
+
+        {/* Resumen */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          {[['Ingresos (ventas)', resumen.total_ingresos, '#22c55e'], ['Egresos (compras)', resumen.total_egresos, '#ef4444'], ['Saldo', resumen.saldo, '#1e293b']].map(([label, val, color]) => (
+            <div key={label} style={{ padding: '1rem', background: 'white', borderRadius: '8px', border: `2px solid ${color}`, minWidth: '170px' }}>
+              <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{label}</div>
+              <div style={{ color, fontWeight: 'bold', fontSize: '1.25rem' }}>${Number(val || 0).toLocaleString('es-AR')}</div>
             </div>
           ))}
         </div>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}>
-            <option value="ingreso">Ingreso</option>
-            <option value="egreso">Egreso</option>
-          </select>
-          <input placeholder="Monto *" type="number" step="0.01" required value={form.monto} onChange={e => setForm(p => ({ ...p, monto: e.target.value }))} style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '120px' }} />
-          <input placeholder="Descripción" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', flex: 1, minWidth: '200px' }} />
-          <button type="submit" style={{ padding: '0.4rem 1rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Registrar</button>
-          {error && <span style={{ color: 'red' }}>{error}</span>}
-        </form>
+
+        {/* Formulario */}
+        <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Registrar movimiento</h3>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+
+            {/* Tipo */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Tipo *</label>
+              <select
+                value={form.tipo}
+                onChange={e => setForm({ ...emptyForm, tipo: e.target.value })}
+                style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+              >
+                <option value="venta">Venta (ingreso + descuenta stock)</option>
+                <option value="compra">Compra (egreso + suma stock)</option>
+                <option value="ingreso">Ingreso genérico</option>
+                <option value="egreso">Egreso genérico</option>
+              </select>
+            </div>
+
+            {/* Producto + Cantidad + Precio (solo para venta/compra) */}
+            {usaProducto && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Producto *</label>
+                  <select
+                    required
+                    value={form.id_producto}
+                    onChange={handleProductoChange}
+                    style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', minWidth: '180px' }}
+                  >
+                    <option value="">— Seleccionar —</option>
+                    {productos.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.codigo ? `[${p.codigo}] ` : ''}{p.nombre} — Stock: {Number(p.stock).toFixed(3)} kg
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Cantidad (kg) *
+                    {prodSeleccionado && form.tipo === 'venta' && (
+                      <span style={{ color: Number(prodSeleccionado.stock) < Number(form.cantidad || 0) ? '#ef4444' : '#22c55e', marginLeft: '0.4rem' }}>
+                        Stock: {Number(prodSeleccionado.stock).toFixed(3)} kg
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    step="0.001"
+                    min="0.001"
+                    placeholder="0.000"
+                    value={form.cantidad}
+                    onChange={e => setForm(f => ({ ...f, cantidad: e.target.value }))}
+                    style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '100px' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Precio x kg *</label>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={form.precio_unit}
+                    onChange={e => setForm(f => ({ ...f, precio_unit: e.target.value }))}
+                    style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '110px' }}
+                  />
+                </div>
+
+                {/* Monto calculado (solo lectura) */}
+                {montoCalculado && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Total</label>
+                    <div style={{ padding: '0.4rem 0.75rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontWeight: '600', color: TIPO_COLOR[form.tipo] }}>
+                      ${Number(montoCalculado).toLocaleString('es-AR')}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Monto manual (solo para ingreso/egreso genérico) */}
+            {!usaProducto && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Monto *</label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={form.monto}
+                  onChange={e => setForm(f => ({ ...f, monto: e.target.value }))}
+                  style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '120px' }}
+                />
+              </div>
+            )}
+
+            {/* Descripción */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, minWidth: '180px' }}>
+              <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Descripción</label>
+              <input
+                placeholder="Opcional"
+                value={form.descripcion}
+                onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+                style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              style={{ padding: '0.45rem 1.25rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              Registrar
+            </button>
+            {error && <span style={{ color: '#ef4444', alignSelf: 'center' }}>{error}</span>}
+          </form>
+        </div>
+
+        {/* Tabla de movimientos */}
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#f8fafc' }}>
-              {['Fecha', 'Tipo', 'Monto', 'Descripción', 'Usuario'].map(h => <th key={h} style={{ padding: '0.5rem', textAlign: 'left', border: '1px solid #e2e8f0' }}>{h}</th>)}
+            <tr>
+              <th style={thStyle}>Fecha</th>
+              <th style={thStyle}>Tipo</th>
+              <th style={thStyle}>Producto</th>
+              <th style={{ ...thStyle, textAlign: 'right' }}>Cant. (kg)</th>
+              <th style={{ ...thStyle, textAlign: 'right' }}>Precio x kg</th>
+              <th style={{ ...thStyle, textAlign: 'right' }}>Monto</th>
+              <th style={thStyle}>Descripción</th>
+              <th style={thStyle}>Usuario</th>
             </tr>
           </thead>
           <tbody>
             {movimientos.map(m => (
               <tr key={m.id}>
-                <td style={{ padding: '0.5rem', border: '1px solid #e2e8f0' }}>{new Date(m.fecha).toLocaleString('es-GT')}</td>
-                <td style={{ padding: '0.5rem', border: '1px solid #e2e8f0', color: m.tipo === 'ingreso' ? '#22c55e' : '#ef4444', fontWeight: 'bold' }}>{m.tipo}</td>
-                <td style={{ padding: '0.5rem', border: '1px solid #e2e8f0' }}>${Number(m.monto).toFixed(2)}</td>
-                <td style={{ padding: '0.5rem', border: '1px solid #e2e8f0' }}>{m.descripcion || '-'}</td>
-                <td style={{ padding: '0.5rem', border: '1px solid #e2e8f0' }}>{m.usuario_nombre}</td>
+                <td style={tdStyle}>{new Date(m.fecha).toLocaleString('es-AR')}</td>
+                <td style={{ ...tdStyle, color: TIPO_COLOR[m.tipo] || '#64748b', fontWeight: '600', textTransform: 'capitalize' }}>{m.tipo}</td>
+                <td style={tdStyle}>{m.producto_nombre ? `${m.producto_codigo ? `[${m.producto_codigo}] ` : ''}${m.producto_nombre}` : '-'}</td>
+                <td style={{ ...tdStyle, textAlign: 'right' }}>{m.cantidad != null ? Number(m.cantidad).toFixed(3) : '-'}</td>
+                <td style={{ ...tdStyle, textAlign: 'right' }}>{m.precio_unit != null ? `$${Number(m.precio_unit).toLocaleString('es-AR')}` : '-'}</td>
+                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600', color: TIPO_ES_ENTRADA(m.tipo) ? '#22c55e' : '#ef4444' }}>
+                  {TIPO_ES_ENTRADA(m.tipo) ? '+' : '-'}${Number(m.monto).toLocaleString('es-AR')}
+                </td>
+                <td style={tdStyle}>{m.descripcion || '-'}</td>
+                <td style={tdStyle}>{m.usuario_nombre}</td>
               </tr>
             ))}
+            {movimientos.length === 0 && (
+              <tr><td colSpan={8} style={{ ...tdStyle, textAlign: 'center', color: '#94a3b8' }}>Sin movimientos registrados</td></tr>
+            )}
           </tbody>
         </table>
       </div>

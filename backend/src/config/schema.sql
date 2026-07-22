@@ -31,8 +31,9 @@ CREATE TABLE IF NOT EXISTS producto (
     id_empresa INT NOT NULL,
     codigo VARCHAR(50),
     nombre VARCHAR(100) NOT NULL,
+    categoria VARCHAR(100),
     precio DECIMAL(10,2) NOT NULL,
-    stock INT DEFAULT 0,
+    stock DECIMAL(10,3) DEFAULT 0,
     FOREIGN KEY (id_empresa) REFERENCES empresa(id) ON DELETE CASCADE
 );
 
@@ -40,12 +41,16 @@ CREATE TABLE IF NOT EXISTS caja_movimiento (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_empresa INT NOT NULL,
     id_usuario INT NOT NULL,
-    tipo ENUM('ingreso', 'egreso') NOT NULL,
+    tipo ENUM('venta', 'compra', 'ingreso', 'egreso') NOT NULL,
+    id_producto INT,
+    cantidad DECIMAL(10,3),
+    precio_unit DECIMAL(10,2),
     monto DECIMAL(10,2) NOT NULL,
     descripcion TEXT,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_empresa) REFERENCES empresa(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_usuario) REFERENCES usuario(id)
+    FOREIGN KEY (id_usuario) REFERENCES usuario(id),
+    FOREIGN KEY (id_producto) REFERENCES producto(id) ON DELETE SET NULL
 );
 
 INSERT INTO rol (id, nombre) VALUES (1, 'superadmin'), (2, 'admin'), (3, 'cajero')

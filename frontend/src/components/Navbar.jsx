@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  const { user, logout, isSuperAdmin } = useAuth();
+  const { user, logout, isSuperAdmin, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -13,6 +13,7 @@ export default function Navbar() {
   return (
     <nav style={{ display: 'flex', gap: '1rem', padding: '1rem', background: '#1e293b', color: 'white' }}>
       <Link to="/inventario" style={{ color: 'white' }}>Inventario</Link>
+      {isAdmin && <Link to="/categorias" style={{ color: 'white' }}>Categorías</Link>}
       <Link to="/caja" style={{ color: 'white' }}>Caja</Link>
       {isSuperAdmin && <Link to="/admin/empresas" style={{ color: 'white' }}>Admin Empresas</Link>}
       <span style={{ marginLeft: 'auto' }}>{user?.nombre} ({user?.rol})</span>
