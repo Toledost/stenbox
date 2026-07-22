@@ -133,7 +133,31 @@ async function eliminarUsuario(req, res) {
   res.json({ message: 'Usuario eliminado' });
 }
 
+// GET /empresas/config — devuelve config de la propia empresa (admin/superadmin)
+async function obtenerConfig(req, res) {
+  const id_empresa = req.user.id_rol === 1 && req.query.empresa
+    ? req.query.empresa
+    : req.user.id_empresa;
+  if (!id_empresa) return res.status(400).json({ message: 'Empresa no determinada' });
+  const [[row]] = await pool.query('SELECT unidad_stock FROM empresa WHERE id=?', [id_empresa]);
+  if (!row) return res.status(404).json({ message: 'Empresa no encontrada' });
+  res.json(row);
+}
+
+// PUT /empresas/config — actualiza config de la propia empresa (admin/superadmin)
+async function actualizarConfig(req, res) {
+  const id_empresa = req.user.id_rol === 1 && req.query.empresa
+    ? req.query.empresa
+    : req.user.id_empresa;
+  if (!id_empresa) return res.status(400).json({ message: 'Empresa no determinada' });
+  const { unidad_stock } = req.body;
+  if (!unidad_stock) return res.status(400).json({ message: 'unidad_stock requerido' });
+  await pool.query('UPDATE empresa SET unidad_stock=? WHERE id=?', [unidad_stock.trim(), id_empresa]);
+  res.json({ message: 'Configuración actualizada' });
+}
+
 module.exports = {
   listarEmpresas, crearEmpresa, actualizarEmpresa, eliminarEmpresa,
   listarUsuariosDeEmpresa, crearUsuarioEnEmpresa, actualizarUsuario, eliminarUsuario,
+  obtenerConfig, actualizarConfig,
 };

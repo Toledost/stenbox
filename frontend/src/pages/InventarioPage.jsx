@@ -2,13 +2,37 @@ import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { Pencil, Trash2, Save, X, Plus } from 'lucide-react';
+import { Pencil, Trash2, Save, X, Plus, Settings } from 'lucide-react';
 import { useEmpresaSelector } from '../hooks/useEmpresaSelector';
 import EmpresaSelector from '../components/EmpresaSelector';
+import { Link } from 'react-router-dom';
 
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
 const emptyForm = { codigo: '', nombre: '', id_categoria: '', precio: '', stock: '' };
+
+function CampoExtra({ campo, value, onChange }) {
+  const style = { width: '100%', padding: '0.45rem', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box' };
+  if (campo.tipo === 'select') {
+    const opts = Array.isArray(campo.opciones) ? campo.opciones : [];
+    return (
+      <select value={value || ''} onChange={e => onChange(e.target.value)} required={!!campo.requerido} style={{ ...style, background: 'white' }}>
+        <option value="">— Seleccionar —</option>
+        {opts.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  }
+  return (
+    <input
+      type={campo.tipo === 'number' ? 'number' : 'text'}
+      step={campo.tipo === 'number' ? 'any' : undefined}
+      value={value || ''}
+      onChange={e => onChange(e.target.value)}
+      required={!!campo.requerido}
+      style={style}
+    />
+  );
+}
 
 function SelectCategoria({ value, onChange, categorias, required }) {
   return (
@@ -24,7 +48,7 @@ function SelectCategoria({ value, onChange, categorias, required }) {
   );
 }
 
-function ModalEditar({ form, setForm, categorias, onSubmit, onClose, error }) {
+function ModalEditar({ form, setForm, atributos, setAtributos, campos, categorias, unidad, onSubmit, onClose, error }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
@@ -32,7 +56,8 @@ function ModalEditar({ form, setForm, categorias, onSubmit, onClose, error }) {
     }} onClick={onClose}>
       <div style={{
         background: 'white', borderRadius: '10px', padding: '1.5rem',
-        width: '100%', maxWidth: '420px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+        width: '100%', maxWidth: '460px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+        maxHeight: '90vh', overflowY: 'auto'
       }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <h3 style={{ margin: 0, fontSize: '1rem' }}>Editar producto</h3>
@@ -71,7 +96,7 @@ function ModalEditar({ form, setForm, categorias, onSubmit, onClose, error }) {
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>Precio x kg *</label>
+              <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>Precio x {unidad} *</label>
               <input
                 required
                 type="number"
@@ -83,7 +108,7 @@ function ModalEditar({ form, setForm, categorias, onSubmit, onClose, error }) {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>Stock (kg)</label>
+              <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>Stock ({unidad})</label>
               <input
                 type="number"
                 step="0.001"
@@ -94,6 +119,20 @@ function ModalEditar({ form, setForm, categorias, onSubmit, onClose, error }) {
               />
             </div>
           </div>
+
+          {/* Campos personalizados */}
+          {campos.map(campo => (
+            <div key={campo.id}>
+              <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                {campo.label}{campo.requerido ? ' *' : ''}
+              </label>
+              <CampoExtra
+                campo={campo}
+                value={atributos[campo.id] ?? ''}
+                onChange={val => setAtributos(prev => ({ ...prev, [campo.id]: val }))}
+              />
+            </div>
+          ))}
 
           {error && <span style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</span>}
 
@@ -125,19 +164,27 @@ export default function InventarioPage() {
   const { empresaParam, empresaId, empresas, setEmpresaId, isSuperAdmin } = useEmpresaSelector();
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [campos, setCampos] = useState([]);
+  const [unidad, setUnidad] = useState('kg');
   const [form, setForm] = useState(emptyForm);
+  const [atributosForm, setAtributosForm] = useState({});  // { id_campo: valor }
   const [editId, setEditId] = useState(null);
+  const [editAtributos, setEditAtributos] = useState({});
   const [error, setError] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('');
 
   async function cargar() {
     if (!empresaId) return;
-    const [{ data: prods }, { data: cats }] = await Promise.all([
+    const [{ data: prods }, { data: cats }, { data: cams }, { data: cfg }] = await Promise.all([
       api.get(`/productos${empresaParam}`),
       api.get(`/categorias${empresaParam}`),
+      api.get(`/campos${empresaParam}`),
+      api.get(`/empresas/config${empresaParam}`),
     ]);
     setProductos(prods);
     setCategorias(cats);
+    setCampos(cams);
+    setUnidad(cfg.unidad_stock || 'kg');
   }
 
   useEffect(() => { cargar(); }, [empresaId]);
@@ -146,8 +193,14 @@ export default function InventarioPage() {
     e.preventDefault();
     setError('');
     try {
-      await api.post(`/productos${empresaParam}`, form);
+      const { data: nuevo } = await api.post(`/productos${empresaParam}`, form);
+      // Guardar atributos del nuevo producto
+      if (Object.keys(atributosForm).length > 0) {
+        const atributos = Object.entries(atributosForm).map(([id_campo, valor]) => ({ id_campo: Number(id_campo), valor }));
+        await api.put(`/campos/atributos/${nuevo.id}${empresaParam}`, { atributos });
+      }
       setForm(emptyForm);
+      setAtributosForm({});
       cargar();
     } catch (err) {
       setError(err.response?.data?.message || 'Error');
@@ -159,8 +212,11 @@ export default function InventarioPage() {
     setError('');
     try {
       await api.put(`/productos/${editId}${empresaParam}`, form);
+      const atributos = Object.entries(editAtributos).map(([id_campo, valor]) => ({ id_campo: Number(id_campo), valor }));
+      await api.put(`/campos/atributos/${editId}${empresaParam}`, { atributos });
       setEditId(null);
       setForm(emptyForm);
+      setEditAtributos({});
       cargar();
     } catch (err) {
       setError(err.response?.data?.message || 'Error');
@@ -171,11 +227,13 @@ export default function InventarioPage() {
     setError('');
     setEditId(p.id);
     setForm({ codigo: p.codigo || '', nombre: p.nombre, id_categoria: p.id_categoria || '', precio: p.precio, stock: p.stock });
+    setEditAtributos(p.atributos || {});
   }
 
   function cerrarModal() {
     setEditId(null);
     setForm(emptyForm);
+    setEditAtributos({});
     setError('');
   }
 
@@ -204,7 +262,11 @@ export default function InventarioPage() {
         <ModalEditar
           form={form}
           setForm={setForm}
+          atributos={editAtributos}
+          setAtributos={setEditAtributos}
+          campos={campos}
           categorias={categorias}
+          unidad={unidad}
           onSubmit={handleSubmitEditar}
           onClose={cerrarModal}
           error={error}
@@ -212,7 +274,19 @@ export default function InventarioPage() {
       )}
 
       <div style={{ padding: '1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
-        <h2 style={{ marginBottom: '1rem' }}>Inventario</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0 }}>Inventario</h2>
+          {isAdmin && (
+            <Link
+              to="/inventario/campos"
+              title="Configurar campos personalizados de producto"
+              style={{ padding: '0.4rem 0.9rem', background: 'white', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}
+            >
+              <Settings size={15} /> Campos personalizados
+            </Link>
+          )}
+        </div>
+
         {isSuperAdmin && <EmpresaSelector empresas={empresas} empresaId={empresaId} onChange={setEmpresaId} />}
 
         {isAdmin && (
@@ -239,13 +313,28 @@ export default function InventarioPage() {
                 </select>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Precio *</label>
+                <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Precio x {unidad} *</label>
                 <input placeholder="0.00" type="number" step="0.01" required value={form.precio} onChange={e => setForm(p => ({ ...p, precio: e.target.value }))} style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '110px' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Stock (kg)</label>
+                <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Stock ({unidad})</label>
                 <input placeholder="0.000" type="number" step="0.001" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} style={{ padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '90px' }} />
               </div>
+
+              {/* Campos personalizados en el form de nuevo producto */}
+              {campos.map(campo => (
+                <div key={campo.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#64748b' }}>{campo.label}{campo.requerido ? ' *' : ''}</label>
+                  <div style={{ minWidth: '120px' }}>
+                    <CampoExtra
+                      campo={campo}
+                      value={atributosForm[campo.id] ?? ''}
+                      onChange={val => setAtributosForm(prev => ({ ...prev, [campo.id]: val }))}
+                    />
+                  </div>
+                </div>
+              ))}
+
               <button type="submit" title="Agregar producto al inventario" style={{ padding: '0.45rem 1rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                 <Plus size={15} /> Agregar
               </button>
@@ -285,8 +374,9 @@ export default function InventarioPage() {
                 <tr>
                   <th style={thStyle}>Código</th>
                   <th style={thStyle}>Nombre</th>
-                  <th style={{ ...thStyle, textAlign: 'right' }}>Precio x kg</th>
-                  <th style={{ ...thStyle, textAlign: 'right' }}>Stock (kg)</th>
+                  {campos.map(c => <th key={c.id} style={thStyle}>{c.label}</th>)}
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Precio x {unidad}</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Stock ({unidad})</th>
                   {isAdmin && <th style={{ ...thStyle, textAlign: 'center', width: '120px' }}>Acciones</th>}
                 </tr>
               </thead>
@@ -298,9 +388,14 @@ export default function InventarioPage() {
                     <tr key={p.id} style={{ background: 'white' }}>
                       <td style={tdStyle}>{p.codigo || '-'}</td>
                       <td style={tdStyle}>{p.nombre}</td>
+                      {campos.map(c => (
+                        <td key={c.id} style={{ ...tdStyle, color: '#475569' }}>
+                          {p.atributos?.[c.id] ?? '—'}
+                        </td>
+                      ))}
                       <td style={{ ...tdStyle, textAlign: 'right' }}>${Number(p.precio).toLocaleString('es-AR')}</td>
                       <td style={{ ...tdStyle, textAlign: 'right', color: stockColor, fontWeight: '600' }}>
-                        {stockNum <= 0 ? 'Sin stock' : `${Number(p.stock).toFixed(3)} kg`}
+                        {stockNum <= 0 ? 'Sin stock' : `${Number(p.stock).toFixed(3)} ${unidad}`}
                       </td>
                       {isAdmin && (
                         <td style={{ ...tdStyle, textAlign: 'center' }}>

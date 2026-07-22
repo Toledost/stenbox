@@ -12,6 +12,8 @@ app.use('/api/empresas', require('./routes/empresa.routes'));
 app.use('/api/categorias', require('./routes/categoria.routes'));
 app.use('/api/productos', require('./routes/producto.routes'));
 app.use('/api/caja', require('./routes/caja.routes'));
+app.use('/api/campos', require('./routes/campo.routes'));
+app.use('/api/tipos-movimiento', require('./routes/tipoMovimiento.routes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

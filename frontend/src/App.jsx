@@ -7,6 +7,8 @@ import InventarioPage from './pages/InventarioPage';
 import CajaPage from './pages/CajaPage';
 import AdminEmpresasPage from './pages/AdminEmpresasPage';
 import CategoriaPage from './pages/CategoriaPage';
+import CamposConfigPage from './pages/CamposConfigPage';
+import TiposMovimientoPage from './pages/TiposMovimientoPage';
 
 export default function App() {
   return (
@@ -16,7 +18,9 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/inventario" element={<ProtectedRoute><InventarioPage /></ProtectedRoute>} />
+          <Route path="/inventario/campos" element={<ProtectedRoute><CamposConfigPage /></ProtectedRoute>} />
           <Route path="/caja" element={<ProtectedRoute><CajaPage /></ProtectedRoute>} />
+          <Route path="/caja/tipos" element={<ProtectedRoute><TiposMovimientoPage /></ProtectedRoute>} />
           <Route path="/categorias" element={<ProtectedRoute><CategoriaPage /></ProtectedRoute>} />
           <Route path="/admin/empresas" element={<ProtectedRoute requireSuperAdmin><AdminEmpresasPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
