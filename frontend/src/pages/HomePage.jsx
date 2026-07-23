@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 const MODULOS = [
   { nombre: 'inventario', label: 'Inventario', path: '/inventario', desc: 'Gestión de productos y stock' },
   { nombre: 'caja', label: 'Caja / Libro Diario', path: '/caja', desc: 'Registro de movimientos de caja' },
+  { nombre: 'turnero', label: 'Turnos / Agenda', path: '/turnos', desc: 'Agenda de turnos y pacientes' },
 ];
 
 export default function HomePage() {

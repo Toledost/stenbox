@@ -18,6 +18,10 @@ app.use('/api/productos', require('./routes/producto.routes'));
 app.use('/api/caja', require('./routes/caja.routes'));
 app.use('/api/campos', require('./routes/campo.routes'));
 app.use('/api/tipos-movimiento', require('./routes/tipoMovimiento.routes'));
+app.use('/api/profesionales', require('./routes/profesional.routes'));
+app.use('/api/pacientes', require('./routes/paciente.routes'));
+app.use('/api/agenda-config', require('./routes/agendaConfig.routes'));
+app.use('/api/turnos', require('./routes/turno.routes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

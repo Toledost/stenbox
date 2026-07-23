@@ -5,6 +5,9 @@ const c = require('../controllers/empresa.controller');
 
 router.use(verifyToken);
 
+// Lista todos los módulos disponibles (superadmin)
+router.get('/modulos', requireRole(1), c.listarModulos);
+
 // Config de empresa: accesible por admin y superadmin
 router.get('/config', requireRole(1, 2), c.obtenerConfig);
 router.put('/config', requireRole(1, 2), c.actualizarConfig);

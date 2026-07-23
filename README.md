@@ -13,11 +13,11 @@ El JWT incluye `id_empresa`, `id_rol` e `id` del usuario. Cada consulta filtra p
 
 ## Roles
 
-| id_rol | nombre     | Permisos                                      |
-|--------|------------|-----------------------------------------------|
-| 1      | superadmin | Todo: gestión de empresas, usuarios, módulos  |
-| 2      | admin      | CRUD productos, caja — dentro de su empresa   |
-| 3      | cajero     | Lectura de inventario, registro de caja       |
+| id_rol | nombre     | Permisos                                     |
+| ------ | ---------- | -------------------------------------------- |
+| 1      | superadmin | Todo: gestión de empresas, usuarios, módulos |
+| 2      | admin      | CRUD productos, caja — dentro de su empresa  |
+| 3      | cajero     | Lectura de inventario, registro de caja      |
 
 ## Estructura
 
@@ -86,24 +86,28 @@ VALUES (1, 1, 'Super', 'Admin', 'admin@ejemplo.com',
 O usar un script temporal en Node:
 
 ```js
-const bcrypt = require('bcrypt');
-console.log(bcrypt.hashSync('tu_password_aqui', 10));
+const bcrypt = require("bcrypt");
+console.log(bcrypt.hashSync("tu_password_aqui", 10));
 ```
 
 ## API Endpoints
 
-| Método | Ruta                              | Auth       | Descripción                  |
-|--------|-----------------------------------|------------|------------------------------|
-| POST   | /api/auth/login                   | Libre      | Login, devuelve JWT          |
-| GET    | /api/productos                    | Token      | Listar productos de empresa  |
-| POST   | /api/productos                    | admin+     | Crear producto               |
-| PUT    | /api/productos/:id                | admin+     | Actualizar producto          |
-| DELETE | /api/productos/:id                | admin+     | Eliminar producto            |
-| GET    | /api/caja                         | Token      | Listar movimientos           |
-| GET    | /api/caja/resumen                 | Token      | Totales ingresos/egresos     |
-| POST   | /api/caja                         | Token      | Registrar movimiento         |
-| GET    | /api/empresas                     | superadmin | Listar empresas              |
-| POST   | /api/empresas                     | superadmin | Crear empresa                |
-| PUT    | /api/empresas/:id                 | superadmin | Actualizar empresa           |
-| DELETE | /api/empresas/:id                 | superadmin | Eliminar empresa             |
-| POST   | /api/empresas/:id_empresa/usuarios| superadmin | Crear usuario en empresa     |
+| Método | Ruta                               | Auth       | Descripción                 |
+| ------ | ---------------------------------- | ---------- | --------------------------- |
+| POST   | /api/auth/login                    | Libre      | Login, devuelve JWT         |
+| GET    | /api/productos                     | Token      | Listar productos de empresa |
+| POST   | /api/productos                     | admin+     | Crear producto              |
+| PUT    | /api/productos/:id                 | admin+     | Actualizar producto         |
+| DELETE | /api/productos/:id                 | admin+     | Eliminar producto           |
+| GET    | /api/caja                          | Token      | Listar movimientos          |
+| GET    | /api/caja/resumen                  | Token      | Totales ingresos/egresos    |
+| POST   | /api/caja                          | Token      | Registrar movimiento        |
+| GET    | /api/empresas                      | superadmin | Listar empresas             |
+| POST   | /api/empresas                      | superadmin | Crear empresa               |
+| PUT    | /api/empresas/:id                  | superadmin | Actualizar empresa          |
+| DELETE | /api/empresas/:id                  | superadmin | Eliminar empresa            |
+| POST   | /api/empresas/:id_empresa/usuarios | superadmin | Crear usuario en empresa    |
+
+## Para correr ngrok
+
+ngrok http 5173

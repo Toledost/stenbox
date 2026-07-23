@@ -156,8 +156,13 @@ async function actualizarConfig(req, res) {
   res.json({ message: 'Configuración actualizada' });
 }
 
+async function listarModulos(req, res) {
+  const [rows] = await pool.query('SELECT id, nombre, label FROM modulo ORDER BY id');
+  res.json(rows);
+}
+
 module.exports = {
   listarEmpresas, crearEmpresa, actualizarEmpresa, eliminarEmpresa,
   listarUsuariosDeEmpresa, crearUsuarioEnEmpresa, actualizarUsuario, eliminarUsuario,
-  obtenerConfig, actualizarConfig,
+  obtenerConfig, actualizarConfig, listarModulos,
 };

@@ -9,6 +9,10 @@ import AdminEmpresasPage from './pages/AdminEmpresasPage';
 import CategoriaPage from './pages/CategoriaPage';
 import CamposConfigPage from './pages/CamposConfigPage';
 import TiposMovimientoPage from './pages/TiposMovimientoPage';
+import TurneroPage from './pages/TurneroPage';
+import PacientesPage from './pages/PacientesPage';
+import ProfesionalesPage from './pages/ProfesionalesPage';
+import AgendaConfigPage from './pages/AgendaConfigPage';
 
 export default function App() {
   return (
@@ -22,6 +26,10 @@ export default function App() {
           <Route path="/caja" element={<ProtectedRoute><CajaPage /></ProtectedRoute>} />
           <Route path="/caja/tipos" element={<ProtectedRoute><TiposMovimientoPage /></ProtectedRoute>} />
           <Route path="/categorias" element={<ProtectedRoute><CategoriaPage /></ProtectedRoute>} />
+          <Route path="/turnos" element={<ProtectedRoute><TurneroPage /></ProtectedRoute>} />
+          <Route path="/turnos/pacientes" element={<ProtectedRoute><PacientesPage /></ProtectedRoute>} />
+          <Route path="/turnos/profesionales" element={<ProtectedRoute><ProfesionalesPage /></ProtectedRoute>} />
+          <Route path="/turnos/config" element={<ProtectedRoute><AgendaConfigPage /></ProtectedRoute>} />
           <Route path="/admin/empresas" element={<ProtectedRoute requireSuperAdmin><AdminEmpresasPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

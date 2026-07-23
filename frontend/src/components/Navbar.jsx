@@ -33,6 +33,9 @@ export default function Navbar() {
             {hasModulo('inventario') && <Link to="/inventario" style={linkStyle}>Inventario</Link>}
             {hasModulo('inventario') && isAdmin && <Link to="/categorias" style={linkStyle}>Categorías</Link>}
             {hasModulo('caja') && <Link to="/caja" style={linkStyle}>Caja</Link>}
+            {hasModulo('turnero') && <Link to="/turnos" style={linkStyle}>Turnos</Link>}
+            {hasModulo('turnero') && <Link to="/turnos/pacientes" style={linkStyle}>Pacientes</Link>}
+            {hasModulo('turnero') && isAdmin && <Link to="/turnos/profesionales" style={linkStyle}>Profesionales</Link>}
             {isSuperAdmin && <Link to="/admin/empresas" style={linkStyle}>Admin Empresas</Link>}
             <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{user?.nombre} ({user?.rol})</span>
             <button onClick={handleLogout} style={{ color: 'white', background: 'none', border: '1px solid white', cursor: 'pointer', padding: '0.25rem 0.75rem', borderRadius: '4px' }}>Salir</button>
@@ -45,6 +48,9 @@ export default function Navbar() {
           {hasModulo('inventario') && <Link to="/inventario" style={linkStyle}>Inventario</Link>}
           {hasModulo('inventario') && isAdmin && <Link to="/categorias" style={linkStyle}>Categorías</Link>}
           {hasModulo('caja') && <Link to="/caja" style={linkStyle}>Caja</Link>}
+          {hasModulo('turnero') && <Link to="/turnos" style={linkStyle}>Turnos</Link>}
+          {hasModulo('turnero') && <Link to="/turnos/pacientes" style={linkStyle}>Pacientes</Link>}
+          {hasModulo('turnero') && isAdmin && <Link to="/turnos/profesionales" style={linkStyle}>Profesionales</Link>}
           {isSuperAdmin && <Link to="/admin/empresas" style={linkStyle}>Admin Empresas</Link>}
           <div style={{ padding: '0.6rem 1rem', borderTop: '1px solid rgba(255,255,255,0.15)', marginTop: '0.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{user?.nombre} ({user?.rol})</span>

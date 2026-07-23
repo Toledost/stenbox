@@ -6,20 +6,12 @@ import { Pencil, Trash2, Save, X, Plus, Check, Loader2 } from 'lucide-react';
 const tdStyle = { padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0' };
 const thStyle = { ...tdStyle, background: '#f8fafc', fontWeight: '600', textAlign: 'left' };
 
-const MODULOS_DISPONIBLES = [
-  { nombre: 'inventario', label: 'Inventario' },
-  { nombre: 'caja', label: 'Caja' },
-];
-
 const ROLES = [
   { id: 2, label: 'Admin' },
   { id: 3, label: 'Cajero' },
 ];
 
-// IDs fijos de módulos (deben coincidir con la BD)
-const MODULO_ID = { inventario: 1, caja: 2 };
-
-function UsuarioRow({ usuario, onActualizar, onEliminar }) {
+function UsuarioRow({ usuario, modulosDisponibles, onActualizar, onEliminar }) {
   const [editando, setEditando] = useState(false);
   const [rol, setRol] = useState(usuario.id_rol);
   const [modulosActivos, setModulosActivos] = useState(usuario.modulos.map(m => m.nombre));
@@ -34,7 +26,7 @@ function UsuarioRow({ usuario, onActualizar, onEliminar }) {
   async function guardar() {
     setGuardando(true);
     try {
-      await onActualizar(usuario.id, { id_rol: rol, modulos: modulosActivos });
+      await onActualizar(usuario.id, { id_rol: rol, modulos: modulosActivos, modulosDisponibles });
       setEditando(false);
     } finally {
       setGuardando(false);
@@ -59,7 +51,7 @@ function UsuarioRow({ usuario, onActualizar, onEliminar }) {
       </td>
       <td style={tdStyle}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {MODULOS_DISPONIBLES.map(m => {
+          {modulosDisponibles.map(m => {
             const activo = editando ? modulosActivos.includes(m.nombre) : usuario.modulos.some(um => um.nombre === m.nombre);
             return (
               <button
@@ -111,17 +103,22 @@ function UsuarioRow({ usuario, onActualizar, onEliminar }) {
 
 function PanelUsuarios({ empresaId, empresaNombre }) {
   const [usuarios, setUsuarios] = useState([]);
+  const [modulosDisponibles, setModulosDisponibles] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [error, setError] = useState('');
-  const emptyForm = { nombre: '', apellido: '', email: '', username: '', password: '', id_rol: 2, modulos: ['inventario', 'caja'] };
+  const emptyForm = { nombre: '', apellido: '', email: '', username: '', password: '', id_rol: 2, modulos: [] };
   const [form, setForm] = useState(emptyForm);
 
   async function cargar() {
     setCargando(true);
     try {
-      const { data } = await api.get(`/empresas/${empresaId}/usuarios`);
-      setUsuarios(data);
+      const [resUsuarios, resModulos] = await Promise.allSettled([
+        api.get(`/empresas/${empresaId}/usuarios`),
+        api.get('/empresas/modulos'),
+      ]);
+      if (resUsuarios.status === 'fulfilled') setUsuarios(resUsuarios.value.data);
+      if (resModulos.status === 'fulfilled') setModulosDisponibles(resModulos.value.data);
     } finally {
       setCargando(false);
     }
@@ -133,7 +130,7 @@ function PanelUsuarios({ empresaId, empresaNombre }) {
     e.preventDefault();
     setError('');
     try {
-      const moduloIds = form.modulos.map(nombre => MODULO_ID[nombre]).filter(Boolean);
+      const moduloIds = form.modulos.map(nombre => modulosDisponibles.find(m => m.nombre === nombre)?.id).filter(Boolean);
       await api.post(`/empresas/${empresaId}/usuarios`, { ...form, modulos: moduloIds });
       setForm(emptyForm);
       setMostrarForm(false);
@@ -144,7 +141,7 @@ function PanelUsuarios({ empresaId, empresaNombre }) {
   }
 
   async function actualizarUsuario(id, datos) {
-    const moduloIds = datos.modulos.map(nombre => MODULO_ID[nombre]).filter(Boolean);
+    const moduloIds = datos.modulos.map(nombre => (datos.modulosDisponibles || modulosDisponibles).find(m => m.nombre === nombre)?.id).filter(Boolean);
     await api.put(`/empresas/usuarios/${id}`, { id_rol: datos.id_rol, modulos: moduloIds });
     cargar();
   }
@@ -195,9 +192,9 @@ function PanelUsuarios({ empresaId, empresaNombre }) {
               {ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
             </select>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Módulos:</span>
-            {MODULOS_DISPONIBLES.map(m => {
+            {modulosDisponibles.map(m => {
               const activo = form.modulos.includes(m.nombre);
               return (
                 <button key={m.nombre} type="button" onClick={() => toggleFormModulo(m.nombre)}
@@ -237,7 +234,7 @@ function PanelUsuarios({ empresaId, empresaNombre }) {
           </thead>
           <tbody>
             {usuarios.map(u => (
-              <UsuarioRow key={u.id} usuario={u} onActualizar={actualizarUsuario} onEliminar={eliminarUsuario} />
+              <UsuarioRow key={u.id} usuario={u} modulosDisponibles={modulosDisponibles} onActualizar={actualizarUsuario} onEliminar={eliminarUsuario} />
             ))}
           </tbody>
         </table>
