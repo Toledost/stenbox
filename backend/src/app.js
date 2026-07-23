@@ -4,7 +4,11 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+].filter(Boolean);
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/auth.routes'));

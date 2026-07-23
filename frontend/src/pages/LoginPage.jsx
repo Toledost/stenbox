@@ -22,13 +22,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f1f5f9' }}>
-      <form onSubmit={handleSubmit} style={{ background: 'white', padding: '2rem', borderRadius: '8px', minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f1f5f9', padding: '1rem' }}>
+      <form onSubmit={handleSubmit} style={{ background: 'white', padding: '2rem', borderRadius: '8px', width: '100%', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <h2 style={{ margin: 0 }}>Stenbox</h2>
         {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
-        <input type="text" placeholder="Usuario" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} required style={{ padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-        <input type="password" placeholder="Contraseña" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required style={{ padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-        <button type="submit" style={{ padding: '0.75rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Entrar</button>
+        <input type="text" placeholder="Usuario" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} required style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '1rem' }} />
+        <input type="password" placeholder="Contraseña" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '1rem' }} />
+        <button type="submit" style={{ padding: '0.75rem', background: '#1e293b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem' }}>Entrar</button>
       </form>
     </div>
   );
